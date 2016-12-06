@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
  
 typedef struct arrdir {
     int tipo; // 0 = diretório / 1 = arquivo
@@ -15,32 +16,34 @@ typedef struct diretorio {
 } TD;
  
 typedef struct arquivo {
-    char tipo_arq;
+    char tipo;
     char *nome, *data_criacao, *data_atualizacao;
     int *permissao; // R(read) W(write) X(execute)
 } TA;
  
  
 // Funções da árvore
-TAD* criar(int tipo);
+TAD* criar(int tipo); // ajeitar
  
 int eDiretorio(TAD *a);
  
 void mover(TAD *raiz, TAD *a, TAD *novo_pai);
 void renomear(TAD *a, char *novo_nome);
+TAD* busca(TAD *raiz, int tipo, char *nome);
+void inserir(TAD *raiz, char *pai, int tipo, char *nome, int *perm);
  
 void transformar_geral(TAD *a);
 TD* transformar_AD(TAD *a);
 TA* transformar_DA(TAD *a);
  
-void destruir(TAD *a, TAD *no);
-void liberar(TAD *a);
+void destruir(TAD *a, TAD *no); //falta esse
+void liberar(TAD *a); //falta esse
  
 // Funções do tipo Arquivo
-TA* cria_arquivo(char *nome, char tipo, int *perm);
+TA* cria_arquivo(char *nome, char tipo, int *perm); // ajeitar
  
 // Funções do tipo Diretório
-TD* cria_diretorio(char *nome, int *perm);
+TD* cria_diretorio(char *nome, int *perm); // ajeitar
  
 char* data_hora(void);
  
@@ -102,7 +105,7 @@ int eDiretorio(TAD *a) {
 TA* cria_arquivo(char *nome, char tipo, int *perm) {
     TA *novo = (TA*) malloc(sizeof(TA));
     novo -> nome = nome;
-    novo -> tipo_arq = tipo;
+    novo -> tipo = tipo;
     novo -> permissao = perm;
  
     char *data = data_hora();
@@ -122,7 +125,7 @@ TD* cria_diretorio(char *nome, int *perm) {
     return novo;
 }
  
-char* data_hora(void) {
+char* data_hora(void) {                                 //BOA JULIA
     char *timestamp = (char*) malloc(sizeof(char) * 40);
  
     time_t rawtime;
@@ -135,3 +138,52 @@ char* data_hora(void) {
  
     return timestamp;
 }
+
+
+// INICIALIZA ARVORE
+
+TAD* criar_arvore() {
+	TD *raiz = (TD*) malloc(sizeof(TD));
+	raiz -> nome = "/";
+	int *perm = (int*) malloc(sizeof(int) * 2);
+	perm[0] = 1; perm[1] = 0;
+	raiz -> permissao = perm;
+	char *data = data_hora();
+	raiz -> data_criacao = raiz -> data_atualizacao = data;
+	
+	TAD *a = (TAD*) malloc(sizeof(TAD));
+	a -> pai = a -> filho = a -> prox_irmao = NULL;
+	a -> tipo = 0;
+	a -> info = raiz;
+	
+	return a;	
+}
+
+TAD* busca(TAD *raiz, int tipo, char *nome) {
+	if (!raiz) return NULL;
+	
+	if (tipo == raiz -> tipo){
+		if(eDiretorio(raiz)) {
+			TD* no = (TD*)raiz -> info;
+			if(!strcmp(no -> nome, nome)) return raiz;
+		}
+		
+		else {
+			TA* no = (TA*) raiz -> info;
+			if (!strcmp(no -> nome, nome)) return raiz;
+		}
+	}
+	TAD *resp;
+	resp = busca(raiz -> prox_irmao, tipo, nome);
+	if(resp)return resp;
+	return busca(raiz -> filho, tipo, nome);
+	
+}
+
+void inserir(TAD *raiz, char *linha) {
+	char *tipo, *nome, *pai, *data;
+	//split( linha, tipo, nome, pai, data); 
+	
+
+}
+
