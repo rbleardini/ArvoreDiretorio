@@ -37,7 +37,7 @@ TAD* parseLinha(char* linha,char** nomePai);
 void imprimir_TAD(TAD *a);
 char* getNome(TAD *a);
 char* getData(TAD *a);
-
+//*******************************************************************************************************************
  
 void mover(TAD *raiz, TAD *a, TAD *novo_pai);
 void renomear(TAD *a, char *novo_nome);
@@ -283,7 +283,6 @@ TAD* criar_arvore(char* nomeArquivo)
 	}
 	while(!feof(fp))
 	{	
-		printf(linha);
 		raiz=addLine(raiz,linha);
 		fgets(linha,MAXLENGTHLINE,fp);
 	}
