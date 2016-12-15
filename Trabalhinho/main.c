@@ -3,15 +3,7 @@
 #include "trab.h"
 
 int main(){
-	TAD *novo = criar(0);
-	
-	if(eDiretorio(novo)){
-		
-		TD* aux = (TD*)novo -> info;
-		printf(" %s\n",aux -> nome);
-	}else{
-		TA* aux = (TA*)novo -> info;
-		printf(" %s\n",aux -> nome);
-	}
-	return 0;
+	TAD* raiz = criar_arvore("exemplo_EDI.txt");
+	imprimir_TAD(raiz);
+	return;
 }

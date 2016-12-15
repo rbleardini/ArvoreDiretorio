@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=5
-CompilerSettings=0000000100000000100000000
-UnitCount=2
+CompilerSettings=0000000100000000101000000
+UnitCount=3
 
 [VersionInfo]
 Major=1
@@ -66,6 +66,15 @@ CompileCpp=0
 Folder=
 Compile=1
 Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
+FileName=exemplo_EDI.txt
+Folder=
+Compile=0
+Link=0
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=

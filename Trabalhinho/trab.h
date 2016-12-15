@@ -3,8 +3,9 @@
 #include <time.h>
 #include <string.h>
  
+ 
 typedef struct arrdir {
-    int tipo; // 0 = diretório / 1 = arquivo
+    char tipo; // D = diretório / T = arquivo de texto / B = arquivo binário
     struct arrdir *pai, *filho, *prox_irmao;
     void *info;
 } TAD;
@@ -16,38 +17,87 @@ typedef struct diretorio {
 } TD;
  
 typedef struct arquivo {
-    char tipo;
     char *nome, *data_criacao, *data_atualizacao;
     int *permissao; // R(read) W(write) X(execute)
 } TA;
- 
+
+#define DIRETORIO 'D'
+#define TEXTO 'T'
+#define BINARIO 'B'
+#define MAXLENGTHLINE 1+1+256+1+256+1+3+1+2+1+4+1+8+1
  
 // Funções da árvore
-TAD* criar(int tipo); // ajeitar
- 
-int eDiretorio(TAD *a);
+//TAD* criar(int tipo); // ajeitar
+
+TAD* criar_arvore(char* nomeArquivo);
+
+//******************************************************AUXILIARES*************************************************** 
+TAD* addLine(TAD* raiz, char* linha);
+TAD* parseLinha(char* linha,char** nomePai);
+void imprimir_TAD(TAD *a);
+char* getNome(TAD *a);
+char* getData(TAD *a);
+
  
 void mover(TAD *raiz, TAD *a, TAD *novo_pai);
 void renomear(TAD *a, char *novo_nome);
-TAD* busca(TAD *raiz, int tipo, char *nome);
+TAD* busca(TAD *raiz, char tipo, char *nome);
 void inserir(TAD *raiz, char *pai, int tipo, char *nome, int *perm);
- 
+
 void transformar_geral(TAD *a);
 TD* transformar_AD(TAD *a);
 TA* transformar_DA(TAD *a);
  
 void destruir(TAD *a, TAD *no); //falta esse
 void liberar(TAD *a); //falta esse
+
+char* getNome(TAD *a){
+	if(!a)return NULL;
+	if(a -> tipo == DIRETORIO){
+		TD* nod = (TD*)a -> info;
+		return nod->nome;
+	}else{
+		TA* noa = (TA*)a -> info;
+		return noa->nome; 
+	}
+}
+
+char* getData(TAD *a){
+	if(!a)return "NULL";
+	if(a -> tipo == 'D'){
+		TD* nod = (TD*)a -> info;
+		return nod->data_criacao;
+	}else{
+		TA* noa = (TA*)a -> info;
+		return noa->data_criacao; 
+	}
+}
+
+void imprimir_TAD(TAD *a){
+	if(!a)return;
+	//tipo + info + pai + data/hora
+	char str[2] = { a -> tipo, '\0'};
+	printf(str);
+	printf("/");
+	printf(getNome(a));
+	printf("/");
+	printf(getNome(a -> pai));
+	printf("/");
+	printf(getData(a));
+	printf("\n");
+	imprimir_TAD(a -> filho);
+	imprimir_TAD(a -> prox_irmao);
+}
  
 // Funções do tipo Arquivo
-TA* cria_arquivo(char *nome, char tipo, int *perm); // ajeitar
+TA* cria_arquivo(char *nome, int *perm); // ajeitar
  
 // Funções do tipo Diretório
 TD* cria_diretorio(char *nome, int *perm); // ajeitar
  
 char* data_hora(void);
- 
- 
+
+/* 
 // CRIAR NÓ
 TAD* criar(int tipo) {
     TAD *novo = (TAD*) malloc(sizeof(TAD));
@@ -101,27 +151,24 @@ int eDiretorio(TAD *a) {
     if (!a) return -1;
     return !(a -> tipo);
 }
- 
-TA* cria_arquivo(char *nome, char tipo, int *perm) {
+*/ 
+TA* cria_arquivo(char *nome, int *perm) {
     TA *novo = (TA*) malloc(sizeof(TA));
-    novo -> nome = nome;
-    novo -> tipo = tipo;
+    novo -> nome = (char*)calloc(sizeof(char),strlen(nome)+1);
+    strcpy(novo -> nome,nome);
     novo -> permissao = perm;
- 
-    char *data = data_hora();
-    novo -> data_criacao = novo -> data_atualizacao = data;
+    novo -> data_criacao = novo -> data_atualizacao = NULL;
     return novo;
 }
  
 TD* cria_diretorio(char *nome, int *perm) {
     TD *novo = (TD*) malloc(sizeof(TD));
-    novo -> nome = nome;
+    novo -> nome = (char*)calloc(sizeof(char),strlen(nome)+1);
+    strcpy(novo -> nome,nome);
     novo -> permissao = perm;
     novo -> n = 0;
- 
-    char *data = data_hora();
-    novo -> data_criacao = novo -> data_atualizacao = data;
- 
+    
+	novo -> data_criacao = novo -> data_atualizacao = NULL;
     return novo;
 }
  
@@ -139,31 +186,117 @@ char* data_hora(void) {                                 //BOA JULIA
     return timestamp;
 }
 
+TAD* parseLinha(char* linha,char** nomePai)
+{	
+	char tipo;
+	char* auxiliar= NULL;
+	TAD* aux=(TAD*)calloc(sizeof(TAD),1);
+	if(!aux)return NULL;
+	
+	auxiliar=strtok(linha,"/");
+	aux->tipo= !strcmp(auxiliar,"D")?DIRETORIO:(!strcmp(auxiliar,"T")?TEXTO:BINARIO);
+	auxiliar=strtok(NULL,"/");
+	
+	int *vet1 = (int*)malloc(sizeof(int)*2);
+	int *vet2 = (int*)malloc(sizeof(int)*3);
+	
+	if(aux->tipo==DIRETORIO)
+	{
+		TD *d = cria_diretorio(auxiliar,vet1);
+		aux -> info = d;
+	}
+	else
+	{
+		TA *a = cria_arquivo(auxiliar,vet2);
+		aux -> info = a;
+	}
+	auxiliar = strtok(NULL,"/");
+	*nomePai = (char*)calloc(sizeof(char),strlen(auxiliar)+1);
+	strcpy(*nomePai,auxiliar);
+	if(aux->tipo==DIRETORIO)
+	{
+		auxiliar=strtok(NULL,"\n");
+		TD* d=(TD*)aux->info;
+		d->data_criacao=(char*)calloc(sizeof(char),strlen(auxiliar)+1);
+		strcpy(d->data_criacao,auxiliar);
+		d->data_atualizacao=(char*)calloc(sizeof(char),strlen(auxiliar)+1);
+		strcpy(d->data_atualizacao,auxiliar);
+	}
+	else
+	{
+		auxiliar=strtok(NULL,"/");
+		auxiliar=strtok(NULL,"\n");
+		TA* a=(TA*)aux->info;
+        a->data_criacao=(char*)calloc(sizeof(char),strlen(auxiliar)+1);
+		strcpy(a->data_criacao,auxiliar);
+		a->data_atualizacao=(char*)calloc(sizeof(char),strlen(auxiliar)+1);
+		strcpy(a->data_atualizacao,auxiliar);
+	}
+	return aux;
+}
+
+
+TAD* addLine(TAD* raiz, char* linha)
+{
+	TAD* pai;
+	TAD* atual;
+	char* nomePai;
+	atual=parseLinha(linha,&nomePai);
+	if(!raiz)return atual;	
+	pai=busca(raiz,DIRETORIO,nomePai);
+	TAD *aux=pai->filho;
+	pai->filho=atual;
+	atual->pai=pai;
+	atual->prox_irmao=aux;
+	return raiz;
+}
+
 
 // INICIALIZA ARVORE
 
-TAD* criar_arvore() {
-	TD *raiz = (TD*) malloc(sizeof(TD));
-	raiz -> nome = "/";
-	int *perm = (int*) malloc(sizeof(int) * 2);
-	perm[0] = 1; perm[1] = 0;
-	raiz -> permissao = perm;
-	char *data = data_hora();
-	raiz -> data_criacao = raiz -> data_atualizacao = data;
-	
-	TAD *a = (TAD*) malloc(sizeof(TAD));
-	a -> pai = a -> filho = a -> prox_irmao = NULL;
-	a -> tipo = 0;
-	a -> info = raiz;
-	
-	return a;	
+//Veja o formato do arquivo
+
+
+TAD* criar_arvore(char* nomeArquivo)
+{
+	TAD *raiz=NULL;
+	FILE* fp;
+	char* linha;
+	linha=(char*)calloc(sizeof(char),MAXLENGTHLINE+1); 
+	fp=fopen(nomeArquivo,"r");
+	if(!fp || !linha)
+	{
+		return NULL;
+	}
+	fgets(linha,MAXLENGTHLINE,fp);
+	int i,n = 0;
+	for(i = 0;linha[i] != '\0';i++){
+		if(linha[i] == '\n')n++;
+	}
+	if(!n)
+	{
+		printf("Erro, arquivo inválido!");
+		free(linha);
+		fclose(fp);
+		free(raiz);
+		return NULL;
+	}
+	while(!feof(fp))
+	{	
+		printf(linha);
+		raiz=addLine(raiz,linha);
+		fgets(linha,MAXLENGTHLINE,fp);
+	}
+
+	return raiz;	
 }
 
-TAD* busca(TAD *raiz, int tipo, char *nome) {
+
+TAD* busca(TAD *raiz, char tipo, char *nome) {
 	if (!raiz) return NULL;
 	
 	if (tipo == raiz -> tipo){
-		if(eDiretorio(raiz)) {
+		if(raiz -> tipo == DIRETORIO) {
 			TD* no = (TD*)raiz -> info;
 			if(!strcmp(no -> nome, nome)) return raiz;
 		}
@@ -178,12 +311,5 @@ TAD* busca(TAD *raiz, int tipo, char *nome) {
 	if(resp)return resp;
 	return busca(raiz -> filho, tipo, nome);
 	
-}
-
-void inserir(TAD *raiz, char *linha) {
-	char *tipo, *nome, *pai, *data;
-	//split( linha, tipo, nome, pai, data); 
-	
-
 }
 
